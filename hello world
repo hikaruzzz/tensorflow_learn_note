@@ -1,0 +1,57 @@
+import tensorflow as tf
+
+
+'创建 常量'
+t0 = tf.constant(3,dtype=tf.int32)  # 整型 常量 0阶Tensor
+
+t1 = tf.constant([3.,4.,5.2],dtype=tf.float32)  # 一维数组 float型 常量 1阶 Tensor
+
+t2 = tf.constant([['id','1001'],['name','xxx']],dtype=tf.string)  # 二维数组 string型 2阶 Tensor
+
+t3 = tf.constant([[[1,1],[2,2]],[[3,3],[4,4]]],dtype=tf.int32)  # 2x2x2数组  整型 3阶Tensor（最小括号数组则是二维数组每个元素的延长）
+
+'查看Tensor的属性'
+print(t3)  # Tensor("Const3:0", shape=(2, 2, 2), dtype=int32) 其中Const3为第三个Tensor
+
+'查看Tensor的元素值'
+sess = tf.Session()
+print(sess.run(t3)[1][1])  # [4 4] 第2行第2列的元素
+
+'计算图 （节点【计算单元，如某些常量】， 线【节点之间的输入/出关系】）'
+node1 = tf.constant(3.2)  # 创建节点 常量
+node2 = tf.constant(4.)  # 创建节点 常量
+node4 = tf.constant(1,dtype=tf.int32)  # int类型 + float类型 = run错误
+
+node3 = node1 + node2  # 创建节点node3， 对node1和2节点进行 + 运算【但实际并未运算，只是一个图】
+
+print(node3 + node1)  # 节点属性 没有计算结果【未运算】
+
+sess = tf.Session()
+print(sess.run(node3))  # 执行 节点对应的 运算
+
+'占位符【可变量】'
+var1 = tf.placeholder(tf.float32)
+var2 = tf.placeholder(tf.float32)
+
+'变量'
+var3 = tf.Variable(1,dtype=tf.float32)
+init = tf.global_variables_initializer()  # 变量要先进行初始化才能用【一开始赋值也不行】
+sess.run(init)
+
+'重新赋值'
+fix_var3 = tf.assign(var3,3)
+sess.run(fix_var3)  # run 使上面生效
+print("fix_var3:",sess.run(fix_var3))
+
+'模型计算'
+node5 = var1 + var2
+node6 = node5 * 2
+print("node5;",node5)
+sess = tf.Session()
+
+print("sess.run[单变量]",sess.run(node5,{var1:3,var2:5}))  # float 【node5】 float
+print("sess.run[数组]",sess.run(node5,{var1:[1,1],var2:[2,2]}))  # float List 【node5】 float List
+print("sess.run[复合函数 原始参数]",sess.run(node6,{var1:3,var2:5}))  # 复合函数（node6（node5（v1,v2)))的计算与参数传入
+
+
+
