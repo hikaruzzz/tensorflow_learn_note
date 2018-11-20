@@ -1,0 +1,38 @@
+import numpy as np
+import tensorflow as tf
+
+
+# create feature list
+feature_columns = [tf.feature_column.numeric_column("x",shape=[1])]
+
+# linear regressor train
+estimator = tf.estimator.LinearRegressor(feature_columns = feature_columns)
+'''estimator include optimizer(maybe with gradient changing learn rate)
+    can reconstruct the function(estimator)
+'''
+# train data
+x_train = np.array([1,2,3,4,5,6,7,8],dtype=np.float32)
+y_train = np.array([1,2,3,4,5,6,7,8],dtype=np.float32)
+y_train_2 = np.array([1,4,5,4,5,6,7,8],dtype=np.float32)
+# evaluation model of different paras and train data
+'''batch_size: the data nums of every batch train 
+   num_epochs:  iteration = total_data / batch_size .epoch = train all data for once,update multiply times(iteration)
+   shuffle: is fetching train data randomly or sequentially
+'''
+train_model_1 = tf.estimator.inputs.numpy_input_fn({"x":x_train},y_train,batch_size=2,num_epochs=1000,shuffle=True)
+
+train_model_2 = tf.estimator.inputs.numpy_input_fn({"x":x_train},y_train,batch_size=2,num_epochs=100,shuffle=False)
+
+train_model_3 = tf.estimator.inputs.numpy_input_fn({"x":x_train},y_train_2,batch_size=2,num_epochs=100,shuffle=True)
+
+# fit
+estimator.train(input_fn=train_model_1)
+
+# evaluation
+train_metrics_sequential = estimator.evaluate(input_fn=train_model_2)
+print("train with sequential data:%s"%train_metrics_sequential)
+
+train_metrics_noise = estimator.evaluate(input_fn=train_model_3)
+print("train with noise data:%s"%train_metrics_noise)
+
+
