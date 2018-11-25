@@ -1,0 +1,71 @@
+'''
+first nn test base tensorflow
+
+'''
+
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+'train data set'
+x_train = np.array([[1,2,3,4,5,6,7,8,9],[1,2,3,4,5,6,7,8,9]], dtype=np.float32)  # x_train.shape= [dim,m]
+y_train = np.array([0,0,0,0,1,1,1,1,1], dtype=np.float32)  # currency y is list
+y_train = y_train.reshape([1, np.size(y_train)])  # y_train.shape = [1,m]
+
+'paras set'
+learn_rate = 0.01
+max_iter = 1000
+dim_input = 2
+layer_1_num = 6
+dim_output = 1
+
+'init weight,b'
+w1 = tf.Variable(tf.random_normal([layer_1_num, dim_input], mean=0.0, stddev=1, seed=1))  # shape=[layer[n], layer[n-1]] ，均值=0，标准差=1
+w2 = tf.Variable(tf.random_normal([dim_output, layer_1_num],  mean=0.0,  stddev=1,   seed=1))
+b1 = tf.Variable(tf.zeros([layer_1_num,1]))  # b.shape = [dim,1]
+b2 = tf.Variable(tf.zeros([dim_output,1]))
+x = tf.placeholder(tf.float32)
+y_ = tf.placeholder(tf.float32)
+
+'tensorflow model'
+a = tf.nn.relu(tf.matmul(w1, x) + b1)
+y = tf.matmul(w2, a) + b2
+predict = tf.sigmoid(y)
+cost = tf.nn.sigmoid_cross_entropy_with_logits(logits=y,  labels=y_)
+optimizer = tf.train.GradientDescentOptimizer(learn_rate)
+fit_model = optimizer.minimize(cost)
+
+
+def show2D(trainX, trainY, isShowTrainX=True):
+    # matlplot 显示，输入trainX，trainY 画训练集点，用已fit模型predict出z值
+    # paras: trainX.shape = (dim,m) trainY.shape = (1,m)
+    h = 0.01
+
+    xMin = trainX.min()
+    xMax = trainX.max()
+    X1 = np.arange(xMin,  xMax,  h)  # 二维trainX，每一维生成m个点
+    xx, yy = np.meshgrid(X1,  X1)  # 合成密集点表
+    input_data = (np.c_[xx.ravel(), yy.ravel()]).transpose()
+    Z = np.floor(sess.run(predict,{x:input_data}) * 1.99999)  # floor向0取整，np.c_按列合并矩阵,ravel转成1维
+    # like: x1&(y1-yn),x2&(y1-yn)..,xn&(y1-yn)
+    Z = Z.reshape(xx.shape)
+    plt.figure(1)
+    plt.contourf(xx,  yy,  Z)
+    if isShowTrainX == True:
+        plt.scatter(trainX[0, :],  trainX[1, :],  c=trainY[0])
+    plt.show()
+
+
+with tf.Session() as sess:
+    init_parars = tf.global_variables_initializer()
+    sess.run(init_parars)
+
+    print("1:",sess.run(w1))
+    for i in range(max_iter):
+        sess.run(fit_model,{x:x_train,y_:y_train})
+
+    print("1:", sess.run(w1))
+
+    print("predict",sess.run(predict,{x:np.array([[2],[2]])}))
+    show2D(trainX=x_train,trainY=y_train)
