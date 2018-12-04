@@ -1,6 +1,7 @@
 '''
 hand writing num classifier
 update:
+    train.saver and train.restore to save variables
     change model for multiply layer neural net
     activation function: nn.relu , sigmoid ,
 tips:
@@ -16,7 +17,9 @@ record:
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 import time
+import sys
 from sklearn.preprocessing import StandardScaler
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
@@ -32,6 +35,8 @@ def Change1to10(y):
     return y_result
 
 'paras set'
+is_train = True  # True:train,False:predict
+paras_save_path = sys.path[0] + '/save_data/num_classifier_NN_paras.ckpt'
 learn_rate = 0.001
 max_iter = 10000
 hide_layer_num_list = [64,9,9,10]  # layer neural num list :like [4,3,3,3] => input dim=4,hide layer = 3 and 3, output dim=3
@@ -40,11 +45,11 @@ init_paras_rate = 0.01  # rate of parameters initialization(weight)
 'train data create and preprocess'
 train_data = load_digits()
 # split data
-x_train,x_test,y_train_,y_test_ = train_test_split(train_data.data,train_data.target,test_size=0.25,random_state=33) # 【：500】
+x_train_,x_test_,y_train_,y_test_ = train_test_split(train_data.data,train_data.target,test_size=0.25,random_state=33) # 【：500】
 # standard
 ss = StandardScaler()
-x_train = ss.fit_transform(x_train)
-x_test = ss.fit_transform(x_test)
+x_train = ss.fit_transform(x_train_)
+x_test = ss.fit_transform(x_test_)
 # transpose data to shape=(dim,m)
 x_train = x_train.transpose()
 x_test = x_test.transpose()
@@ -102,17 +107,28 @@ y_predict = tf.to_float(tf.argmax(z[len(hide_layer_num_list)-1],axis=0))  # chan
 correct_matrix = tf.equal(y_predict,y_score_input)
 score_prediction = tf.reduce_mean(tf.cast(correct_matrix,dtype=tf.float32))
 
+# save paras
+saver = tf.train.Saver()
+
 'fit'
 with tf.Session() as sess:
+
     # init Variable
     sess.run(tf.global_variables_initializer())
 
     # train
-    for i in range(max_iter):
-        sess.run(fit_model,feed_dict={x:x_train,y_:y_train})
+    if is_train == True:
+        for i in range(max_iter):
+            sess.run(fit_model,feed_dict={x:x_train,y_:y_train})
+    else:
+        saver.restore(sess,paras_save_path)  # not need init variables
+
+    # save paras
+    path_save = saver.save(sess,paras_save_path)
+    print("variables save success:",path_save)
 
     # predict and accuracy
-    print("w1:",sess.run(w[1]))
-    print("predict count:",len(sess.run(y_predict,feed_dict={x:x_train})))
+    print("simple count:",len(sess.run(y_predict,feed_dict={x:x_train})))
     print("score prediction:",sess.run(score_prediction,feed_dict={x:x_test,y_score_input:y_test_}))
     print("time used:%f s"%(time.time()-time_start))
+
