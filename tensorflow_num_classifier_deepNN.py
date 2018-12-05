@@ -1,5 +1,7 @@
 '''
 hand writing num classifier
+introduce:
+     variable easily layer neural net,using SGDoptimizer,datasets from sklearn(1300+simple)
 update:
     train.saver and train.restore to save variables
     change model for multiply layer neural net
