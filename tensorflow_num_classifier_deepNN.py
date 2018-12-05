@@ -5,11 +5,13 @@ update:
     change model for multiply layer neural net
     activation function: nn.relu , sigmoid ,
 tips:
+    care learn rate, 0.01 -> 0.0001 more try
     weight[n].shape = (num_layer[n], num_layer[n-1])
     dont't reshape data or argmax() between graph calculation(prefer preprocess all data before train model)
     argmax(...,axis = 0 or 1)   0 is vertical calc, 1 is horizon calc
     nan data: use log_softmax() or reduce learn_rate,like:0.001
 record:
+    2018.12.5:use gpu but accuracy reduce to 0.6 ,cpu is 0.92,[solved:learn_rate reduce to 0.0001]
     2018.12.4:multiply hide layer,hide layer x2,neural num = 9 and 9,accuracy:0.91778,time used:13.534s(only CPU:E3 1230v2),simple data:1300+,learn_rate=0.001,iter=10000,
     2018.11.25:one hide layer,4 neural，accuracy:0.869,time used:13.2s(only CPU:E3 1230v2),simple data:1300+，learn_rate=0.001,iter=10000,
 '''
@@ -20,10 +22,13 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import time
 import sys
+import os
 from sklearn.preprocessing import StandardScaler
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 
+os.environ['TF_CPP_MIN_LOG_LEVEL']='3' #Disable Tensorflow debugging information
+os.environ['CUDA_VISIBLE_DEVICES'] = '0' # GPU only='0' ,CPU only='-1'
 
 time_start = time.time()
 def Change1to10(y):
@@ -34,10 +39,11 @@ def Change1to10(y):
         y_result[y[i]][i] = 1  # 第x个 -》 第i个的第x个=1
     return y_result
 
+
 'paras set'
 is_train = True  # True:train,False:predict
 paras_save_path = sys.path[0] + '/save_data/num_classifier_NN_paras.ckpt'
-learn_rate = 0.001
+learn_rate = 0.0001
 max_iter = 10000
 hide_layer_num_list = [64,9,9,10]  # layer neural num list :like [4,3,3,3] => input dim=4,hide layer = 3 and 3, output dim=3
 init_paras_rate = 0.01  # rate of parameters initialization(weight)
@@ -105,30 +111,41 @@ y_predict = tf.to_float(tf.argmax(z[len(hide_layer_num_list)-1],axis=0))  # chan
 
 # score model
 correct_matrix = tf.equal(y_predict,y_score_input)
-score_prediction = tf.reduce_mean(tf.cast(correct_matrix,dtype=tf.float32))
+score_prediction = tf.reduce_mean(tf.cast(correct_matrix,dtype=tf.float32))  # accuracy of input and label
 
 # save paras
 saver = tf.train.Saver()
 
 'fit'
 with tf.Session() as sess:
-
     # init Variable
     sess.run(tf.global_variables_initializer())
 
     # train
     if is_train == True:
-        for i in range(max_iter):
-            sess.run(fit_model,feed_dict={x:x_train,y_:y_train})
+        iter_max = 20000
+        for i in range(iter_max):
+            sess.run(fit_model, feed_dict={x: x_train, y_: y_train})
+            accuracy = sess.run(score_prediction, feed_dict={x: x_test, y_score_input: y_test_})
+            if i%1000==0 or (i<200 and i%10==0):
+                print("accuracy:"+str(accuracy)+"   iter:" + str(i))
+        # save paras
+        path_save = saver.save(sess, sys.path[0] + '/save_data/' + 'iter_'+ str(iter_max) + 'accuray_' + str(accuracy) + '.ckpt')
+
     else:
+        paras_save_path = './save_data/iter_20000accuray_0.91333336.ckpt'
         saver.restore(sess,paras_save_path)  # not need init variables
 
     # save paras
-    path_save = saver.save(sess,paras_save_path)
-    print("variables save success:",path_save)
+    #path_save = saver.save(sess,paras_save_path)
+    # print("variables save success:",path_save)
 
     # predict and accuracy
-    print("simple count:",len(sess.run(y_predict,feed_dict={x:x_train})))
-    print("score prediction:",sess.run(score_prediction,feed_dict={x:x_test,y_score_input:y_test_}))
+    print("accuracy:", sess.run(score_prediction, feed_dict={x: x_test, y_score_input: y_test_}))
     print("time used:%f s"%(time.time()-time_start))
 
+    # plt.gray()
+    # for i in range(10):
+    #     plt.matshow(x_train_[i].reshape(8,8))
+    #     plt.title(sess.run(y_predict, feed_dict={x: x_train}))
+    # plt.show()
