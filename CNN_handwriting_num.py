@@ -1,5 +1,5 @@
 '''
-simple CNN model by tensorflow
+simple CNN model by tensorflow(need the file "MNIST_data_set" in local path)
 net model:
     [all active function = Relu , output function = softmax]
     [cross entropy loss: -y_predict * log(y_train)]
